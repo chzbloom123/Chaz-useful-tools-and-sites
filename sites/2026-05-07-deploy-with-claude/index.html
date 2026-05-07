@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deploy with Claude — Netlify MCP Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: #1e2d45;
+    --teal: #00d4aa;
+    --teal-dim: rgba(0, 212, 170, 0.12);
+    --amber: #f5a623;
+    --amber-dim: rgba(245, 166, 35, 0.1);
+    --blue: #4da6ff;
+    --muted: #64748b;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --success: #22c55e;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── BACKGROUND GRID ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── HEADER ─── */
+  .hero {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 72px 24px 56px;
+    overflow: hidden;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: -60px; left: 50%;
+    transform: translateX(-50%);
+    width: 600px; height: 300px;
+    background: radial-gradient(ellipse, rgba(0,212,170,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--teal-dim);
+    border: 1px solid rgba(0,212,170,0.3);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--teal);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+
+  .badge-dot {
+    width: 6px; height: 6px;
+    background: var(--teal);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+  }
+
+  .hero h1 span { color: var(--teal); }
+
+  .hero p {
+    font-size: 1.1rem;
+    color: var(--text-dim);
+    max-width: 560px;
+    margin: 0 auto 40px;
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+
+  .stat-num {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--teal);
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  /* ─── LAYOUT ─── */
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* ─── SECTION LABEL ─── */
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--teal);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ─── PREREQ BLOCK ─── */
+  .prereq-block {
+    background: var(--amber-dim);
+    border: 1px solid rgba(245, 166, 35, 0.25);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 48px;
+    display: flex;
+    gap: 16px;
+  }
+
+  .prereq-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .prereq-block h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--amber);
+    margin-bottom: 8px;
+  }
+
+  .prereq-block ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .prereq-block li {
+    font-size: 13px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .prereq-block li::before {
+    content: '→';
+    color: var(--amber);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ─── STEP CARDS ─── */
+  .steps { display: flex; flex-direction: column; gap: 0; margin-bottom: 56px; }
+
+  .step-card {
+    border-left: 2px solid var(--border);
+    margin-left: 20px;
+    padding-left: 32px;
+    padding-bottom: 40px;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .step-card:last-child { padding-bottom: 0; border-left-color: transparent; }
+
+  .step-card.active { border-left-color: var(--teal); }
+  .step-card.done { border-left-color: var(--success); }
+
+  .step-number {
+    position: absolute;
+    left: -20px;
+    top: 0;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+  }
+
+  .step-card.active .step-number {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: var(--bg);
+    box-shadow: 0 0 20px rgba(0,212,170,0.4);
+  }
+
+  .step-card.done .step-number {
+    background: var(--success);
+    border-color: var(--success);
+    color: var(--bg);
+  }
+
+  .step-header {
+    cursor: pointer;
+    padding-top: 8px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    user-select: none;
+  }
+
+  .step-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    transition: color 0.2s;
+  }
+
+  .step-card.active .step-title,
+  .step-card.done .step-title { color: var(--text); }
+
+  .step-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .tag-setup { background: rgba(77,166,255,0.1); color: var(--blue); }
+  .tag-connect { background: rgba(0,212,170,0.1); color: var(--teal); }
+  .tag-prompt { background: rgba(245,166,35,0.1); color: var(--amber); }
+  .tag-deploy { background: rgba(34,197,94,0.1); color: var(--success); }
+
+  .step-body {
+    display: none;
+    padding-top: 16px;
+  }
+
+  .step-card.active .step-body { display: block; }
+
+  .step-card.done .step-body {
+    display: block;
+    opacity: 0.6;
+  }
+
+  .step-body p {
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    line-height: 1.75;
+    margin-bottom: 16px;
+    font-weight: 300;
+  }
+
+  .step-body p strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* ─── VISUAL INSTRUCTION LIST ─── */
+  .instruction-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .instruction-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    transition: border-color 0.2s;
+  }
+
+  .instruction-item:hover { border-color: rgba(0,212,170,0.3); }
+
+  .instr-num {
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--teal);
+    margin-top: 1px;
+  }
+
+  .instr-text {
+    font-size: 13.5px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    font-weight: 400;
+  }
+
+  .instr-text strong { color: var(--text); font-weight: 600; }
+  .instr-text code {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(0,212,170,0.08);
+    border: 1px solid rgba(0,212,170,0.2);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 12px;
+    color: var(--teal);
+  }
+
+  /* ─── PROMPT BOX ─── */
+  .prompt-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  .prompt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .prompt-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--teal);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .prompt-label::before {
+    content: '//';
+    opacity: 0.5;
+  }
+
+  .copy-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-family: 'Sora', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .copy-btn:hover {
+    border-color: var(--teal);
+    color: var(--teal);
+    background: var(--teal-dim);
+  }
+
+  .copy-btn.copied {
+    border-color: var(--success);
+    color: var(--success);
+    background: rgba(34,197,94,0.08);
+  }
+
+  .prompt-text {
+    padding: 16px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .prompt-text .hl { color: var(--amber); }
+  .prompt-text .var { color: var(--teal); }
+  .prompt-text .comment { color: var(--muted); font-style: italic; }
+
+  /* ─── STEP DONE BTN ─── */
+  .step-done-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 10px 22px;
+    background: var(--teal);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    font-family: 'Sora', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .step-done-btn:hover {
+    background: #00eabc;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0,212,170,0.3);
+  }
+
+  /* ─── SCREENSHOT MOCK ─── */
+  .mock-ui {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin: 16px 0;
+  }
+
+  .mock-titlebar {
+    background: var(--surface2);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mock-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .mock-dot.red { background: #ff5f56; }
+  .mock-dot.yellow { background: #ffbd2e; }
+  .mock-dot.green { background: #27c93f; }
+
+  .mock-title {
+    flex: 1;
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .mock-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mock-nav {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+  }
+
+  .mock-nav-item {
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  .mock-nav-item.active {
+    background: var(--teal-dim);
+    border-color: rgba(0,212,170,0.4);
+    color: var(--teal);
+    font-weight: 700;
+  }
+
+  .mock-connector-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+
+  .mock-connector-info { display: flex; align-items: center; gap: 12px; }
+
+  .mock-connector-logo {
+    width: 32px; height: 32px;
+    background: #1a2338;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .mock-connector-name { font-size: 13px; font-weight: 600; }
+  .mock-connector-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .mock-btn {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    border: none;
+    cursor: default;
+  }
+
+  .mock-btn.connect {
+    background: var(--teal);
+    color: var(--bg);
+  }
+
+  .mock-btn.connected {
+    background: rgba(34,197,94,0.1);
+    color: var(--success);
+    border: 1px solid rgba(34,197,94,0.3);
+  }
+
+  /* ─── RESPONSE MOCK ─── */
+  .chat-mock {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin: 16px 0;
+  }
+
+  .chat-msg {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .chat-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .chat-avatar.user {
+    background: rgba(77,166,255,0.2);
+    color: var(--blue);
+    border: 1px solid rgba(77,166,255,0.3);
+  }
+
+  .chat-avatar.claude {
+    background: rgba(0,212,170,0.15);
+    color: var(--teal);
+    border: 1px solid rgba(0,212,170,0.3);
+  }
+
+  .chat-bubble {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    flex: 1;
+  }
+
+  .chat-bubble.user-bubble { border-color: rgba(77,166,255,0.2); }
+
+  .chat-bubble code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: rgba(0,212,170,0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--teal);
+  }
+
+  .typing-indicator {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 4px 0;
+  }
+
+  .typing-dot {
+    width: 6px; height: 6px;
+    background: var(--teal);
+    border-radius: 50%;
+    animation: typingPulse 1.2s ease-in-out infinite;
+  }
+
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typingPulse {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+
+  /* ─── DEPLOY RESULT ─── */
+  .deploy-result {
+    background: rgba(34,197,94,0.06);
+    border: 1px solid rgba(34,197,94,0.25);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+
+  .deploy-result h4 {
+    color: var(--success);
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .deploy-result .url-line {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--teal);
+    background: rgba(0,212,170,0.06);
+    border: 1px solid rgba(0,212,170,0.15);
+    border-radius: 6px;
+    padding: 10px 14px;
+  }
+
+  /* ─── TIPS BOX ─── */
+  .tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 56px;
+  }
+
+  .tip-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+
+  .tip-card:hover { border-color: rgba(0,212,170,0.3); }
+
+  .tip-icon {
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+
+  .tip-card h4 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .tip-card p {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  /* ─── PROGRESS BAR ─── */
+  .progress-bar-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(10,14,23,0.9);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .progress-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--teal);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--teal), #00eabc);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+
+  .progress-steps {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .prog-dot {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .prog-dot.active { border-color: var(--teal); color: var(--teal); }
+  .prog-dot.done { background: var(--success); border-color: var(--success); color: var(--bg); }
+
+  /* ─── FOOTER ─── */
+  footer {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 32px 24px 48px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  footer code {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--teal);
+    font-size: 11px;
+  }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero { animation: fadeUp 0.6s ease forwards; }
+  .prereq-block { animation: fadeUp 0.6s 0.1s ease both; }
+  .steps { animation: fadeUp 0.6s 0.2s ease both; }
+</style>
+</head>
+<body>
+
+<!-- PROGRESS BAR -->
+<div class="progress-bar-wrap" id="progressBar">
+  <span class="progress-label">PROGRESS</span>
+  <div class="progress-track">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+  <div class="progress-steps" id="progressDots"></div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="badge"><span class="badge-dot"></span>Interactive Guide</div>
+  <h1>Deploy a Website<br>from a <span>Claude Chat</span></h1>
+  <p>Learn how to connect the Netlify MCP, prompt Claude to write HTML, and ship a live site — without leaving the conversation.</p>
+  <div class="hero-stats">
+    <div class="stat"><span class="stat-num">4</span> steps</div>
+    <div class="stat"><span class="stat-num">~10</span> min</div>
+    <div class="stat"><span class="stat-num">0</span> terminal required</div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="container">
+
+  <!-- PREREQS -->
+  <div class="prereq-block">
+    <div class="prereq-icon">⚡</div>
+    <div>
+      <h3>Before You Start</h3>
+      <ul>
+        <li>A Claude.ai account (any paid plan gives you connectors)</li>
+        <li>A free Netlify account at netlify.com</li>
+        <li>No coding experience needed — Claude writes the code</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- STEPS -->
+  <div class="section-label">The Walkthrough</div>
+
+  <div class="steps" id="steps">
+
+    <!-- STEP 1 -->
+    <div class="step-card active" id="step-0">
+      <div class="step-number" onclick="toggleStep(0)">1</div>
+      <div class="step-header" onclick="toggleStep(0)">
+        <div class="step-title">Connect Netlify to Claude</div>
+        <span class="step-tag tag-setup">Setup</span>
+      </div>
+      <div class="step-body">
+        <p>Claude can talk directly to Netlify through something called an <strong>MCP connector</strong> — think of it as giving Claude a plugin that lets it actually push code to a live server on your behalf.</p>
+
+        <div class="mock-ui">
+          <div class="mock-titlebar">
+            <div class="mock-dot red"></div>
+            <div class="mock-dot yellow"></div>
+            <div class="mock-dot green"></div>
+            <div class="mock-title">claude.ai → Settings → Integrations</div>
+          </div>
+          <div class="mock-body">
+            <div class="mock-nav">
+              <div class="mock-nav-item">Profile</div>
+              <div class="mock-nav-item">Appearance</div>
+              <div class="mock-nav-item active">Integrations ✓</div>
+              <div class="mock-nav-item">Notifications</div>
+            </div>
+            <div class="mock-connector-card">
+              <div class="mock-connector-info">
+                <div class="mock-connector-logo">🌐</div>
+                <div>
+                  <div class="mock-connector-name">Netlify</div>
+                  <div class="mock-connector-desc">Deploy and manage websites</div>
+                </div>
+              </div>
+              <div class="mock-btn connect">Connect</div>
+            </div>
+            <div class="mock-connector-card">
+              <div class="mock-connector-info">
+                <div class="mock-connector-logo">📋</div>
+                <div>
+                  <div class="mock-connector-name">Google Drive</div>
+                  <div class="mock-connector-desc">Access your files</div>
+                </div>
+              </div>
+              <div class="mock-btn connected">Connected ✓</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="instruction-list">
+          <div class="instruction-item">
+            <div class="instr-num">1</div>
+            <div class="instr-text">Go to <strong>claude.ai</strong> and click your profile icon in the top-right corner</div>
+          </div>
+          <div class="instruction-item">
+            <div class="instr-num">2</div>
+            <div class="instr-text">Select <strong>Settings</strong>, then navigate to the <strong>Integrations</strong> tab</div>
+          </div>
+          <div class="instruction-item">
+            <div class="instr-num">3</div>
+            <div class="instr-text">Find <strong>Netlify</strong> in the connector list and click <code>Connect</code></div>
+          </div>
+          <div class="instruction-item">
+            <div class="instr-num">4</div>
+            <div class="instr-text">You'll be redirected to Netlify's login — sign in and click <strong>Authorize</strong> to grant Claude access</div>
+          </div>
+          <div class="instruction-item">
+            <div class="instr-num">5</div>
+            <div class="instr-text">Return to Claude. The connector now shows <code>Connected ✓</code></div>
+          </div>
+        </div>
+
+        <button class="step-done-btn" onclick="markDone(0)">Got it, connector is connected →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step-card" id="step-1">
+      <div class="step-number" onclick="toggleStep(1)">2</div>
+      <div class="step-header" onclick="toggleStep(1)">
+        <div class="step-title">Start a New Chat</div>
+        <span class="step-tag tag-connect">Connect</span>
+      </div>
+      <div class="step-body">
+        <p>Open a fresh chat with Claude. You don't need to do anything special to activate the Netlify connector — Claude detects it automatically and will use it when your prompt calls for a deployment.</p>
+
+        <div class="instruction-list">
+          <div class="instruction-item">
+            <div class="instr-num">1</div>
+            <div class="instr-text">Click <strong>New Chat</strong> on the claude.ai sidebar — connectors are active in every conversation automatically</div>
+          </div>
+          <div class="instruction-item">
+            <div class="instr-num">2</div>
+            <div class="instr-text">You can optionally type: <em>"What Netlify tools do you have available?"</em> — Claude will list what it can do before you start</div>
+          </div>
+          <div class="instruction-item">
+            <div class="instr-num">3</div>
+            <div class="instr-text">Claude will respond with its Netlify capabilities: <strong>reading projects, deploying sites, managing env vars</strong>, and more</div>
+          </div>
+        </div>
+
+        <button class="step-done-btn" onclick="markDone(1)">Ready, chat is open →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step-card" id="step-2">
+      <div class="step-number" onclick="toggleStep(2)">3</div>
+      <div class="step-header" onclick="toggleStep(2)">
+        <div class="step-title">Ask Claude to Build Your Site</div>
+        <span class="step-tag tag-prompt">Prompt</span>
+      </div>
+      <div class="step-body">
+        <p>This is where the magic happens. Give Claude a description of what you want — it will write a complete, single-file HTML page. Be as simple or as specific as you like. Here are two example prompts that work well:</p>
+
+        <div class="prompt-box">
+          <div class="prompt-header">
+            <span class="prompt-label">Simple Starter Prompt</span>
+            <button class="copy-btn" onclick="copyPrompt(this, 'p1')">
+              <span>Copy</span>
+            </button>
+          </div>
+          <div class="prompt-text" id="p1">Write me a single-file HTML page that is a <span class="hl">simple personal landing page</span>.
+It should have my name, a short bio section, and three links.
+<span class="comment">// Style it cleanly — dark background, modern font, nothing fancy.</span></div>
+        </div>
+
+        <div class="prompt-box">
+          <div class="prompt-header">
+            <span class="prompt-label">Detailed Custom Prompt</span>
+            <button class="copy-btn" onclick="copyPrompt(this, 'p2')">
+              <span>Copy</span>
+            </button>
+          </div>
+          <div class="prompt-text" id="p2">Write a single self-contained HTML file for a <span class="hl">small business landing page</span>.
+
+Include:
+- A bold headline with a tagline
+- A 3-column services section
+- A contact form (no backend needed, just the UI)
+- Footer with copyright
+
+<span class="comment">// Use only inline CSS and vanilla JS. No frameworks. No external files.</span>
+<span class="comment">// Make it mobile responsive.</span></div>
+        </div>
+
+        <div class="chat-mock">
+          <div class="chat-msg">
+            <div class="chat-avatar user">You</div>
+            <div class="chat-bubble user-bubble">Write me a single-file HTML personal landing page with my name, a short bio, and three links. Dark background, modern font.</div>
+          </div>
+          <div class="chat-msg">
+            <div class="chat-avatar claude">C</div>
+            <div class="chat-bubble">
+              <div class="typing-indicator">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p>Claude will return a full block of HTML code. You can ask it to revise anything — colors, layout, copy — before deploying.</p>
+
+        <button class="step-done-btn" onclick="markDone(2)">Site looks good, ready to deploy →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step-card" id="step-3">
+      <div class="step-number" onclick="toggleStep(3)">4</div>
+      <div class="step-header" onclick="toggleStep(3)">
+        <div class="step-title">Ask Claude to Deploy It</div>
+        <span class="step-tag tag-deploy">Deploy</span>
+      </div>
+      <div class="step-body">
+        <p>In the <strong>same chat</strong>, once you're happy with the code, tell Claude to deploy it. It will use its Netlify connector to create a new project and push your file live. No terminal. No GitHub. Just the chat.</p>
+
+        <div class="prompt-box">
+          <div class="prompt-header">
+            <span class="prompt-label">Deploy Prompt</span>
+            <button class="copy-btn" onclick="copyPrompt(this, 'p3')">
+              <span>Copy</span>
+            </button>
+          </div>
+          <div class="prompt-text" id="p3">Great, I love it. Now <span class="hl">deploy that HTML file to Netlify</span> as a new site.
+<span class="comment">// Claude will create the project and give you the live URL.</span></div>
+        </div>
+
+        <div class="instruction-list">
+          <div class="instruction-item">
+            <div class="instr-num">1</div>
+            <div class="instr-text">Claude calls the Netlify connector in the background — you'll see a brief note like <em>"Deploying to Netlify..."</em></div>
+          </div>
+          <div class="instruction-item">
+            <div class="instr-num">2</div>
+            <div class="instr-text">Within 30–60 seconds, Claude returns a <strong>live URL</strong> — something like <code>your-site.netlify.app</code></div>
+          </div>
+          <div class="instruction-item">
+            <div class="instr-num">3</div>
+            <div class="instr-text">Click the link. Your page is live on the internet. You can share it immediately.</div>
+          </div>
+          <div class="instruction-item">
+            <div class="instr-num">4</div>
+            <div class="instr-text">Want changes? Just say: <em>"Update the headline to say X and redeploy"</em> — Claude will revise and push again</div>
+          </div>
+        </div>
+
+        <div class="deploy-result">
+          <h4>✓ Deployment Successful</h4>
+          <div class="url-line">https://your-landing-page-3a9f.netlify.app</div>
+        </div>
+
+        <button class="step-done-btn" onclick="markDone(3)">🎉 Site is live!</button>
+      </div>
+    </div>
+
+  </div><!-- /steps -->
+
+  <!-- TIPS -->
+  <div class="section-label">Pro Tips</div>
+  <div class="tips-grid">
+    <div class="tip-card">
+      <div class="tip-icon">🔁</div>
+      <h4>Iterate in the Same Chat</h4>
+      <p>Every edit and redeploy happens in the same conversation. Claude remembers the code it wrote — just describe what to change.</p>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">📋</div>
+      <h4>Single File = Simple Deploy</h4>
+      <p>Ask Claude specifically for a "single self-contained HTML file." It keeps all CSS and JS inline — Netlify can deploy one file instantly.</p>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">🏗️</div>
+      <h4>Check Your Netlify Dashboard</h4>
+      <p>Every deploy shows up in your Netlify account at netlify.com. You can manage custom domains, analytics, and form submissions there.</p>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">🔐</div>
+      <h4>Claude Needs Your Permission</h4>
+      <p>Claude can only do what the Netlify connector allows — and only because you authorized it. You can revoke access in Settings at any time.</p>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<footer>
+  Built as a teaching example &nbsp;·&nbsp; <code>netlify-mcp-guide.html</code> &nbsp;·&nbsp; Powered by Claude + Netlify MCP
+</footer>
+
+<script>
+  const TOTAL_STEPS = 4;
+  let doneSteps = new Set();
+
+  function initProgressDots() {
+    const dots = document.getElementById('progressDots');
+    for (let i = 0; i < TOTAL_STEPS; i++) {
+      const d = document.createElement('div');
+      d.className = 'prog-dot';
+      d.id = `dot-${i}`;
+      d.textContent = i + 1;
+      d.onclick = () => toggleStep(i);
+      dots.appendChild(d);
+    }
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const pct = (doneSteps.size / TOTAL_STEPS) * 100;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.querySelector('.progress-label').textContent =
+      doneSteps.size === TOTAL_STEPS ? '🎉 COMPLETE' : `STEP ${Math.min(getCurrentActive() + 1, TOTAL_STEPS)} OF ${TOTAL_STEPS}`;
+
+    for (let i = 0; i < TOTAL_STEPS; i++) {
+      const dot = document.getElementById(`dot-${i}`);
+      dot.className = 'prog-dot';
+      if (doneSteps.has(i)) dot.classList.add('done');
+      else if (i === getCurrentActive()) dot.classList.add('active');
+    }
+  }
+
+  function getCurrentActive() {
+    for (let i = 0; i < TOTAL_STEPS; i++) {
+      if (!doneSteps.has(i)) return i;
+    }
+    return TOTAL_STEPS;
+  }
+
+  function toggleStep(i) {
+    const card = document.getElementById(`step-${i}`);
+    const isActive = card.classList.contains('active');
+    // Collapse all
+    for (let j = 0; j < TOTAL_STEPS; j++) {
+      const c = document.getElementById(`step-${j}`);
+      if (!doneSteps.has(j)) c.classList.remove('active');
+    }
+    // Toggle clicked
+    if (!isActive && !doneSteps.has(i)) card.classList.add('active');
+  }
+
+  function markDone(i) {
+    doneSteps.add(i);
+    const card = document.getElementById(`step-${i}`);
+    card.classList.remove('active');
+    card.classList.add('done');
+    card.querySelector('.step-number').textContent = '✓';
+
+    // Open next step
+    if (i + 1 < TOTAL_STEPS) {
+      const next = document.getElementById(`step-${i + 1}`);
+      next.classList.add('active');
+      setTimeout(() => next.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+    } else {
+      // All done
+      document.querySelector('.progress-label').textContent = '🎉 COMPLETE';
+    }
+    updateProgress();
+  }
+
+  function copyPrompt(btn, id) {
+    const el = document.getElementById(id);
+    const text = el.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.classList.add('copied');
+      btn.querySelector('span').textContent = 'Copied!';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.querySelector('span').textContent = 'Copy';
+      }, 2000);
+    });
+  }
+
+  initProgressDots();
+</script>
+</body>
+</html>

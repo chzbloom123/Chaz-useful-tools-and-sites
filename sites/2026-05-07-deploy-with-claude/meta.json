@@ -1,0 +1,7 @@
+{
+  "title": "Deploy with Claude",
+  "date": "2026-05-07",
+  "summary": "Interactive guide to deploying a website from a Claude chat using the Netlify MCP connector.",
+  "tags": ["guide", "netlify", "mcp", "interactive"],
+  "audience": "public"
+}
