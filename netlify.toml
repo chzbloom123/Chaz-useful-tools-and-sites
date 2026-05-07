@@ -1,0 +1,3 @@
+[build]
+  command = "node _build/gen-index.js"
+  publish = "public"
