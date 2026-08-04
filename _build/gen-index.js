@@ -104,7 +104,12 @@ if (activeSites.length === 0) {
     const tags = (site.tags || [])
       .map(t => `<span class="tag">${escapeHtml(t)}</span>`)
       .join(' ');
-    return `<a href="/${escapeHtml(site.slug)}/" class="tool-card">
+    // External tools link straight out to their own URL in a new tab
+    // instead of to an internal /<slug>/ page.
+    const isExternal = Boolean(site.external && site.url);
+    const href = isExternal ? site.url : `/${site.slug}/`;
+    const linkAttrs = isExternal ? ' target="_blank" rel="noopener noreferrer"' : '';
+    return `<a href="${escapeHtml(href)}" class="tool-card"${linkAttrs}>
   <h2>${escapeHtml(site.title || site.slug)}</h2>
   <p class="tool-summary">${escapeHtml(site.summary || '')}</p>
   <div class="tool-meta">
