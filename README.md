@@ -27,6 +27,24 @@ Personal toolkit hub. Each tool is a single self-contained HTML file, deployed t
 3. `git commit -am "add: tool name" && git push`
 4. Netlify rebuilds (~10s), URL `/<slug>/` is live, landing page updates
 
+## Add a tool that links out (external tool)
+
+For a tool that already lives elsewhere (e.g. a separate hosted app), skip `index.html` and point the card straight at it, opening in a new tab:
+
+1. Create `sites/YYYY-MM-DD-slug/meta.json` with `external: true` and a `url`:
+   ```
+   {
+     "title": "Tool Name",
+     "date": "2026-05-07",
+     "summary": "One line of what it does.",
+     "tags": ["external"],
+     "audience": "self",
+     "external": true,
+     "url": "https://example.com"
+   }
+   ```
+2. `git commit -am "add: tool name" && git push`
+
 ## Archive a tool
 
 Move the folder from `sites/` to `archive/`. URL still resolves at `/archive/<slug>/`. Landing page no longer lists it.

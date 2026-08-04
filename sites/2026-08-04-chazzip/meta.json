@@ -1,0 +1,9 @@
+{
+  "title": "Chazzip",
+  "date": "2026-08-04",
+  "summary": "Opens the Chazzip app in a new tab.",
+  "tags": ["external"],
+  "audience": "self",
+  "external": true,
+  "url": "https://chazzipserver-production.up.railway.app/"
+}
